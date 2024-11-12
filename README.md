@@ -1,3 +1,7 @@
-# COMP-5710 Final Project Fall 2024
+# Forensic Anti-patterns in Machine Learning Engineering 
 
-Team Members: Ben Ciglekse, Ashton Wise
+## Farzana Ahmed Bhuiyan and Akond Rahman 
+
+### Details 
+
+> Demo video for the work in progress: https://drive.google.com/file/d/14lcIbDCIfHu8chqEOS7IX-yEckDFjT8z/view?usp=sharing
