@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# This script runs security checks on Python files and generates a CSV report.
+# It blocks the commit if critical security issues are detected.
+
+# Temporary file for the security report
+REPORT_FILE="security_report.csv"
+
+# Determine the branch to compare against
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+    against=HEAD
+else
+    # Initial commit: diff against an empty tree object
+    against=$(git hash-object -t tree /dev/null)
+fi
+
+# Redirect output to stderr
+exec 1>&2
+
+# Find all staged Python files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.py$')
+
+if [ -n "$STAGED_FILES" ]; then
+    echo "Running security checks on staged Python files..."
+
+    # Clear or create the report file
+    echo "Filename,Issue,Issue,Severity,Severity, ,, , , , LineNumber,Reference" > $REPORT_FILE
+
+    # Run Bandit on each staged file
+    for FILE in $STAGED_FILES; do
+        bandit -r "$FILE" -f csv | tail -n +2 >> $REPORT_FILE
+    done
+
+    # Display the report
+    echo "Security issues detected (if any):"
+    cat $REPORT_FILE
+
+    # Check if the report contains HIGH or MEDIUM severity issues
+    if grep -q "MEDIUM\|HIGH" $REPORT_FILE; then
+        echo "Commit rejected due to security vulnerabilities. Fix the issues listed above."
+        exit 1
+    fi
+fi
+
+# Allow the commit if no critical issues are found
+exit 0
