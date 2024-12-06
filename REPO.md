@@ -6,7 +6,45 @@
 Create a Git Hook that will run and report all security weaknesses in the project in a CSV file whenever a Python file is changed and committed. (20%)
 
 ### Pre-commit Hook:
+```
+REPORT="security_vulnerability_report.csv"
 
+TEMP=$(mktemp)
+
+# Gets the list of all staged Python files if there are any (should be).
+git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
+
+# Check if there are any Python files to scan
+if [ -s "$TEMP" ]; then
+    echo "Security scan running."
+
+    echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
+
+    # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
+    while IFS= read -r file
+    do
+        if [ -f "$file" ]; then
+            bandit -f csv -o temp_sec.csv "$file"
+            tail -n +2 temp_sec.csv >> "$REPORT"
+        fi
+    done < "$TEMP"
+
+    rm temp_sec.csv
+
+    if [ $(wc -l < "$REPORT") -gt 1 ]; then
+        echo "Security issues detected by Bandit. See $REPORT for details."
+    else
+        echo "No security issues found by Bandit."
+        rm "$REPORT"
+    fi
+else
+    echo "No Python files staged for commit. Skipping Bandit scan."
+fi
+
+rm "$TEMP"
+
+exit 0
+```
     
 ![alt text](Hooks/image.png)
 
@@ -19,9 +57,10 @@ Create a Git Hook that will run and report all security weaknesses in the projec
 
 Create a fuzz.py file that will automatically fuzz 5 Python methods of your choice. Report any bugs you discovered by the fuzz.py file. fuzz.py will be automatically executed from GitHub actions. (20%)
 
-### Fuzz.py
+### Fuzz.py & Fuzz.yml
 A file named fuzz.py was created, with its purpose being to fuzz 5 methods in mining.py:
 
+```
 from MLForensics.mining.mining import (
     deleteRepo,
     dumpContentIntoFile,
@@ -29,9 +68,11 @@ from MLForensics.mining.mining import (
     days_between,
     getPythonFileCount
 )
+```
 
 We can generate random strings, dates, etc. to test. The fuzz.py file is ran via a GitHub workflow named fuzz.yml located in .github\workflows. The results of one 10 iterations of this fuzzing test can be seen below, along with a screenshot of the GitHub action succeeding in the repo:
 
+```
 Starting fuzz testing...
 
 --- Iteration 1 ---
@@ -125,6 +166,7 @@ Fuzzing days_between...
 Fuzzing getPythonFileCount...
 
 Fuzzing has been completed!
+```
 
 ![alt text](fuzztest-image.png)
 
