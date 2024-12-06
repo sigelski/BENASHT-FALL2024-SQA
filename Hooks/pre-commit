@@ -41,7 +41,7 @@ if [ -s "$TEMP" ]; then
         if [ -d "$dir" ]; then
             echo "Scanning directory: $dir"
             
-            bandit -q -f csv -o temp_sec.csv "$dir"
+            bandit -r csv -o temp_sec.csv "$dir"
 
             tail -n +2 temp_sec.csv >> "$REPORT"
         else
