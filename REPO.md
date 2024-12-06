@@ -218,3 +218,4 @@ For continuous integration via GitHub actions, we utilized codacy. The file coda
 
 ## Lessons Learned
 
+For the most part, we were able to incorporate what we learned from the workshops directly into the project. There were some difficulties with logging, again due to not running the code. There were also challenges with the pre-commit hook via a GitHub repo, but we ended up adding it to our .git locally when it was needed.
