@@ -6,6 +6,8 @@
 Create a Git Hook that will run and report all security weaknesses in the project in a CSV file whenever a Python file is changed and committed. (20%)
 
 ### Pre-commit Hook:
+Using Bandit as the scannign software, we created a pre-commit hook that would scan any modified python files, and generate a csv in the root directory of the repository if any issues were found:
+
 ```
 REPORT="security_vulnerability_report.csv"
 
@@ -176,6 +178,31 @@ Fuzzing has been completed!
 
 Integrate forensics by modifying 5 Python methods of your choice. (20%)
 
+### Mining.py:
+For forensics, we integrated logging into 5 methods of mining.py. They are  (cloneRepo, deleteRepo, dumpContentIntoFile, getDevDayCount, and cloneRepos). The logging saves to mining.log in the root directory of the repository. Due to the nature of the file and not being able to run the full code, we were only able to capture a limited amount of the logging, though the code is there to catch more if the program were ever to be ran.
+
+Below is one example of logging, and what the log file contains:
+
+```
+def deleteRepo(dirName, type_):
+    logging.info(f"Attempting to delete repository: {dirName} | Type: {type_}") # Method 1 for implementing forensics.
+    print(':::' + type_ + ':::Deleting ', dirName)
+    try:
+        if os.path.exists(dirName):
+            shutil.rmtree(dirName)
+            logging.info(f"Successfully deleted repository: {dirName}")
+        else:
+            logging.warning(f"Directory does not exist: {dirName}")
+    except OSError as e:
+        logging.error(f"Error deleting repository {dirName}: {e}. Will try manually.")
+        print('Failed deleting, will try manually')  
+```
+
+```
+2024-12-05 20:25:32 - INFO - Script started.
+2024-12-05 20:28:09 - INFO - Script started.
+2024-12-05 20:28:09 - INFO - Loaded repository list from security_vulnerability_report.csv
+```
 
 ## GitHub Actions Integrations
 
@@ -183,3 +210,4 @@ Integrate forensics by modifying 5 Python methods of your choice. (20%)
 
 Integrate continuous integration with GitHub Actions. (20%)
 
+### 
