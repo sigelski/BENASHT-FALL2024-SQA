@@ -14,7 +14,7 @@ git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
 if [ -s "$TEMP" ]; then
     echo "Security scan running."
 
-    echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,more_info" > "$REPORT"
+    echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
 
     # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
     while IFS= read -r file
