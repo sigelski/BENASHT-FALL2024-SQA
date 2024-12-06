@@ -247,8 +247,8 @@ def cloneRepos(repo_list, dev_threshold=3, python_threshold=0.10, commit_thresho
 
 if __name__=='__main__':
     logging.info("Script started.")
-    repos_df = pd.read_csv('PARTIAL_REMAINING_GITHUB.csv', sep='delimiter')
-    logging.info("Loaded repository list from PARTIAL_REMAINING_GITHUB.csv")
+    repos_df = pd.read_csv('security_vulnerability_report.csv', sep='delimiter')
+    logging.info("Loaded repository list from security_vulnerability_report.csv")
     print(repos_df.head())
     list_    = repos_df['url'].tolist()
     list_ = np.unique(list_)
