@@ -5,36 +5,40 @@
 
 REPORT="security_vulnerability_report.csv"
 
-TEMP=$(mktemp)
+# Create separate temporary files, otherwise scanning multiple files shows no security issues?
+TEMP_FILES=$(mktemp)
+TEMP_CONTENT=$(mktemp)
+BANDIT_TEMP="temp_sec.csv"
 
-# Gets the list of all staged Python files if there are any (should be).
-git diff --cached --name-only --diff-filter=ACMR | grep -i '\.py$' > "$TEMP"
+# Ensure temporary files are removed on exit
+trap 'rm -f "$TEMP_FILES" "$TEMP_CONTENT" "$BANDIT_TEMP"' EXIT
+
+# Get the list of all staged Python files if there are any (should be).
+git diff --cached --name-only --diff-filter=ACMR | grep -i '\.py$' > "$TEMP_FILES"
 
 echo "Files to scan:" 
-cat "$TEMP"
+cat "$TEMP_FILES"
 
-# Check if there are any Python files to scan
-if [ -s "$TEMP" ]; then
+if [ -s "$TEMP_FILES" ]; then
     echo "Security scan running."
 
     echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
 
-    # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
+    # Run Bandit on each staged Python file, and append the results to the REPORT.
     while IFS= read -r file
     do
-        # Extract the staged version of the file to a temporary file
-        git show ":$file" > "$TEMP" 2>/dev/null
+        git show ":$file" > "$TEMP_CONTENT" 2>/dev/null
 
-        if [ $? -eq 0 ] && [ -s "$TEMP" ]; then
-            bandit -f csv -o temp_sec.csv "$TEMP"
-            sed "s|^|$file,|" temp_sec.csv | tail -n +2 >> "$REPORT"
+        if [ $? -eq 0 ] && [ -s "$TEMP_CONTENT" ]; then
+            bandit -f csv -o "$BANDIT_TEMP" "$TEMP_CONTENT"
+
+            if [ -s "$BANDIT_TEMP" ]; then
+                sed "s|^|$file,|" "$BANDIT_TEMP" | tail -n +2 >> "$REPORT"
+            fi
         else
             echo "Failed to retrieve staged version of $file"
         fi
-    done < "$TEMP"
-
-    rm temp_sec.csv
-    rm "$TEMP"
+    done < "$TEMP_FILES"
 
     if [ $(wc -l < "$REPORT") -gt 1 ]; then
         echo "Security issues detected by Bandit. See $REPORT for details."
@@ -45,7 +49,5 @@ if [ -s "$TEMP" ]; then
 else
     echo "No Python files staged for commit. Skipping Bandit scan."
 fi
-
-rm "$TEMP"
 
 exit 0
