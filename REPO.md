@@ -6,45 +6,7 @@
 Create a Git Hook that will run and report all security weaknesses in the project in a CSV file whenever a Python file is changed and committed. (20%)
 
 ### Pre-commit Hook:
-```
-REPORT="security_vulnerability_report.csv"
 
-TEMP=$(mktemp)
-
-# Gets the list of all staged Python files if there are any (should be).
-git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
-
-# Check if there are any Python files to scan
-if [ -s "$TEMP" ]; then
-    echo "Security scan running."
-
-    echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
-
-    # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
-    while IFS= read -r file
-    do
-        if [ -f "$file" ]; then
-            bandit -f csv -o temp_sec.csv "$file"
-            tail -n +2 temp_sec.csv >> "$REPORT"
-        fi
-    done < "$TEMP"
-
-    rm temp_sec.csv
-
-    if [ $(wc -l < "$REPORT") -gt 1 ]; then
-        echo "Security issues detected by Bandit. See $REPORT for details."
-    else
-        echo "No security issues found by Bandit."
-        rm "$REPORT"
-    fi
-else
-    echo "No Python files staged for commit. Skipping Bandit scan."
-fi
-
-rm "$TEMP"
-
-exit 0
-```
     
 ![alt text](Hooks/image.png)
 
@@ -58,12 +20,7 @@ exit 0
 Create a fuzz.py file that will automatically fuzz 5 Python methods of your choice. Report any bugs you discovered by the fuzz.py file. fuzz.py will be automatically executed from GitHub actions. (20%)
 
 ### Fuzz.py
-```
-import random
-import string
-import os
-import sys
-from datetime import datetime, timedelta
+A file named fuzz.py was created, with its purpose being to fuzz 5 methods in mining.py:
 
 from MLForensics.mining.mining import (
     deleteRepo,
@@ -73,97 +30,103 @@ from MLForensics.mining.mining import (
     getPythonFileCount
 )
 
-def random_string(length=10):
-    """Generate a random string of fixed length."""
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+We can generate random strings, dates, etc. to test. The fuzz.py file is ran via a GitHub workflow named fuzz.yml located in .github\workflows. The results of one 10 iterations of this fuzzing test can be seen below, along with a screenshot of the GitHub action succeeding in the repo:
 
-def random_path():
-    """Generate a random file path."""
-    return os.path.join(random_string(5), random_string(5) + ".txt")
+Starting fuzz testing...
 
-def random_list():
-    """Generate a random list with random elements."""
-    return [random.randint(-1000, 1000) for _ in range(random.randint(0, 100))]
+--- Iteration 1 ---
+Fuzzing deleteRepo...
+:::nZyuL:::Deleting  ZXjqy/7fWnx.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='aNc05GCyTv2pKulEwbibL8n3XCNAmYE9j4A0czneqHEWeroYhx' and fileP='2z9B8/lRsyd.txt': [Errno 2] No such file or directory: '2z9B8/lRsyd.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def random_date():
-    """Generate a random datetime object."""
-    start_date = datetime(2000, 1, 1)
-    end_date = datetime.now()
-    delta = end_date - start_date
-    random_days = random.randint(0, delta.days)
-    return start_date + timedelta(days=random_days)
+--- Iteration 2 ---
+Fuzzing deleteRepo...
+:::ugg0M:::Deleting  8dnPi/RrjIv.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='bMLDXnjTGjufwUFZ2oZKtUWMKRoJc2XdaFSCXBxQncLWszDz6n' and fileP='0pQIo/G11IZ.txt': [Errno 2] No such file or directory: '0pQIo/G11IZ.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def fuzz_deleteRepo():
-    print("Fuzzing deleteRepo...")
-    dirName = random_path()
-    type_ = random_string(5)
-    try:
-        deleteRepo(dirName, type_)
-    except Exception as e:
-        print(f"deleteRepo raised an exception with dirName='{dirName}' and type_='{type_}': {e}")
+--- Iteration 3 ---
+Fuzzing deleteRepo...
+:::6qst7:::Deleting  pCcX4/mBWlA.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='LqX7Ab8bZDiSVu2hyAoHRm3NvRTlMPOCYQOwBInQiFUKEFwYn6' and fileP='cvpDr/o1ZaT.txt': [Errno 2] No such file or directory: 'cvpDr/o1ZaT.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def fuzz_dumpContentIntoFile():
-    print("Fuzzing dumpContentIntoFile...")
-    strP = random_string(50)
-    fileP = random_path()
-    try:
-        dumpContentIntoFile(strP, fileP)
-    except Exception as e:
-        print(f"dumpContentIntoFile raised an exception with strP='{strP}' and fileP='{fileP}': {e}")
+--- Iteration 4 ---
+Fuzzing deleteRepo...
+:::MZGZD:::Deleting  KGjMV/EwmdA.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='o7i96LuHWqKZHTDhj3Wj8KqJTjXBXin4gj8gKp5zA8ovedJRUb' and fileP='yamko/DsyCV.txt': [Errno 2] No such file or directory: 'yamko/DsyCV.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def fuzz_makeChunks():
-    print("Fuzzing makeChunks...")
-    the_list = random_list()
-    size_ = random.randint(-10, 100)
-    try:
-        chunks = makeChunks(the_list, size_)
-        for chunk in chunks:
-            pass
-    except Exception as e:
-        print(f"makeChunks raised an exception with the_list='{the_list}' and size_='{size_}': {e}")
+--- Iteration 5 ---
+Fuzzing deleteRepo...
+:::XzIeC:::Deleting  5l1fW/28i3W.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='tAecGyIUoCeJl5wvMQfrz4xfANWYwyUZgUetrhB3I0IwEMa2U4' and fileP='lHpIj/u963L.txt': [Errno 2] No such file or directory: 'lHpIj/u963L.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def fuzz_days_between():
-    print("Fuzzing days_between...")
-    d1_ = random_date()
-    d2_ = random_date()
-    try:
-        days_between(d1_, d2_)
-    except Exception as e:
-        print(f"days_between raised an exception with d1_='{d1_}' and d2_='{d2_}': {e}")
+--- Iteration 6 ---
+Fuzzing deleteRepo...
+:::cRq12:::Deleting  B2PFK/n3sCX.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='Q9H968wzjSCJ4rJhZG9a4qfdvjdlmblonFkxkWey1X3hfUR6ZB' and fileP='X7FBW/HKny1.txt': [Errno 2] No such file or directory: 'X7FBW/HKny1.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def fuzz_getPythonFileCount():
-    print("Fuzzing getPythonFileCount...")
-    path2dir = random_path()
-    try:
-        getPythonFileCount(path2dir)
-    except Exception as e:
-        print(f"getPythonFileCount raised an exception with path2dir='{path2dir}': {e}")
+--- Iteration 7 ---
+Fuzzing deleteRepo...
+:::9d6RY:::Deleting  5FelE/Kqzwz.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='gTpucXS8M2m18vp6mwlLwJJDaa6dK5TnfWREdxrbOD30LgpIgO' and fileP='lSIne/HGGMs.txt': [Errno 2] No such file or directory: 'lSIne/HGGMs.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-def main():
-    print("Starting fuzz testing...\n")
-    fuzz_functions = [
-        fuzz_deleteRepo,
-        fuzz_dumpContentIntoFile,
-        fuzz_makeChunks,
-        fuzz_days_between,
-        fuzz_getPythonFileCount
-    ]
+--- Iteration 8 ---
+Fuzzing deleteRepo...
+:::p9WZr:::Deleting  ngQ1E/zTfPQ.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='cYPK5Xd7ctKube5IWJFI409KLEOseCTHsNGE1CLxOTtcOtXmqN' and fileP='Jr0Ap/6Rtyg.txt': [Errno 2] No such file or directory: 'Jr0Ap/6Rtyg.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-    # Change this to determine number of times each method should be fuzzed.
-    iterations = 10
+--- Iteration 9 ---
+Fuzzing deleteRepo...
+:::g4bLf:::Deleting  G2HT9/MkZal.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='DhHrjnQpYAw83jT7ClpTWQ1fSecI1Yjq93f8muz8zrrwKEMhT9' and fileP='NMGGC/9aMXF.txt': [Errno 2] No such file or directory: 'NMGGC/9aMXF.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-    for i in range(iterations):
-        print(f"\n--- Iteration {i+1} ---")
-        for fuzz_func in fuzz_functions:
-            fuzz_func()
+--- Iteration 10 ---
+Fuzzing deleteRepo...
+:::S0DSd:::Deleting  EhH43/PUdTw.txt
+Fuzzing dumpContentIntoFile...
+dumpContentIntoFile raised an exception with strP='WpOTE83UFfDwsqoeoQdpPfD0YYrm1qu9lv8d2EZliYdvQ4rhgY' and fileP='Yvh7m/9cXCR.txt': [Errno 2] No such file or directory: 'Yvh7m/9cXCR.txt'
+Fuzzing makeChunks...
+Fuzzing days_between...
+Fuzzing getPythonFileCount...
 
-    print("\nFuzzing has been completed!")
+Fuzzing has been completed!
 
-if __name__ == '__main__':
-    main()
-```
-
-ADD BUG REPORT GENERATED BY GITHUB ACTIONS
+![alt text](fuzztest-image.png)
 
 ## Forensics
 
