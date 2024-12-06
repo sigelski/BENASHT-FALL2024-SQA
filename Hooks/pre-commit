@@ -5,40 +5,27 @@
 
 REPORT="security_vulnerability_report.csv"
 
-# Create separate temporary files, otherwise scanning multiple files shows no security issues?
-TEMP_FILES=$(mktemp)
-TEMP_CONTENT=$(mktemp --suffix=.py)
-BANDIT_TEMP="temp_sec.csv"
+TEMP=$(mktemp)
 
-# Ensure temporary files are removed on exit
-trap 'rm -f "$TEMP_FILES" "$TEMP_CONTENT" "$BANDIT_TEMP"' EXIT
+# Gets the list of all staged Python files if there are any (should be).
+git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
 
-# Get the list of all staged Python files if there are any (should be).
-git diff --cached --name-only --diff-filter=ACMR | grep -i '\.py$' > "$TEMP_FILES"
-
-echo "Files to scan:" 
-cat "$TEMP_FILES"
-
-if [ -s "$TEMP_FILES" ]; then
+# Check if there are any Python files to scan
+if [ -s "$TEMP" ]; then
     echo "Security scan running."
 
     echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
 
-    # Run Bandit on each staged Python file, and append the results to the REPORT.
+    # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
     while IFS= read -r file
     do
-        git show ":$file" > "$TEMP_CONTENT" 2>/dev/null
-
-        if [ $? -eq 0 ] && [ -s "$TEMP_CONTENT" ]; then
-            bandit -f csv -o "$BANDIT_TEMP" "$TEMP_CONTENT"
-
-            if [ -s "$BANDIT_TEMP" ]; then
-                sed "s|^|$file,|" "$BANDIT_TEMP" | tail -n +2 >> "$REPORT"
-            fi
-        else
-            echo "Failed to retrieve staged version of $file"
+        if [ -f "$file" ]; then
+            bandit -f csv -o temp_sec.csv "$file"
+            tail -n +2 temp_sec.csv >> "$REPORT"
         fi
-    done < "$TEMP_FILES"
+    done < "$TEMP"
+
+    rm temp_sec.csv
 
     if [ $(wc -l < "$REPORT") -gt 1 ]; then
         echo "Security issues detected by Bandit. See $REPORT for details."
@@ -49,5 +36,7 @@ if [ -s "$TEMP_FILES" ]; then
 else
     echo "No Python files staged for commit. Skipping Bandit scan."
 fi
+
+rm "$TEMP"
 
 exit 0
