@@ -3,40 +3,49 @@
 ### COMP-5710 Final Project ###
 ### 5a - Create a Git Hook that will run and report all security weaknesses in the project in a CSV file whenever a Python file is changed and committed. (20%)
 
+#!/bin/bash
+
 REPORT="security_vulnerability_report.csv"
 
-TEMP=$(mktemp)
+cleanup() {
+    rm -f temp_sec.csv "$TEMP"
+}
+trap cleanup EXIT
 
-# Gets the list of all staged Python files if there are any (should be).
-git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
+git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > /dev/null
+STAGED_PY_FILES_EXIST=$?
 
-# Check if there are any Python files to scan
-if [ -s "$TEMP" ]; then
-    echo "Security scan running."
+if [ "$STAGED_PY_FILES_EXIST" -eq 0 ]; then
+    echo "Python files are staged for commit. Running Bandit on all Python files in the repository."
 
     echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
 
-    # Runs Bandit on each staged Python file, and then appends the results to the REPORT.
-    while IFS= read -r file
-    do
-        if [ -f "$file" ]; then
-            bandit -f csv -o temp_sec.csv "$file"
-            tail -n +2 temp_sec.csv >> "$REPORT"
-        fi
-    done < "$TEMP"
+    find . -type f -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" > all_python_files.txt
 
-    rm temp_sec.csv
+    # Check if there are any Python files to scan
+    if [ -s all_python_files.txt ]; then
+        while IFS= read -r file
+        do
+            if [ -f "$file" ]; then
+                # Run Bandit on each file and append results to the report
+                bandit -f csv -o temp_sec.csv "$file"
+                tail -n +2 temp_sec.csv >> "$REPORT"
+            fi
+        done < all_python_files.txt
+    fi
 
-    if [ $(wc -l < "$REPORT") -gt 1 ]; then
+    rm -f temp_sec.csv
+
+    rm -f all_python_files.txt
+
+    if [ "$(wc -l < "$REPORT")" -gt 1 ]; then
         echo "Security issues detected by Bandit. See $REPORT for details."
     else
         echo "No security issues found by Bandit."
-        rm "$REPORT"
+        rm -f "$REPORT"
     fi
 else
-    echo "No Python files staged for commit. Skipping Bandit scan."
+    echo "ℹ️  No Python files staged for commit. Skipping Bandit scan."
 fi
-
-rm "$TEMP"
 
 exit 0

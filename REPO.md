@@ -210,4 +210,11 @@ def deleteRepo(dirName, type_):
 
 Integrate continuous integration with GitHub Actions. (20%)
 
-### 
+### Codacy-analysis.yaml:
+
+For continuous integration via GitHub actions, we utilized codacy. The file codacy-analysis.yaml was created to run as a workflow on any push. A successful run of the workflow can be seen below:
+
+![alt text](codacyanalysis-image.png)
+
+## Lessons Learned
+
