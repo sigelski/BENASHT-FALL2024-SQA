@@ -8,7 +8,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-from mining import (
+from MLForensics.mining.mining import (
     deleteRepo,
     dumpContentIntoFile,
     makeChunks,
