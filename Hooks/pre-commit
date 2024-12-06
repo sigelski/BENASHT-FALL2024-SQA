@@ -7,7 +7,7 @@ REPORT="security_vulnerability_report.csv"
 
 # Create separate temporary files, otherwise scanning multiple files shows no security issues?
 TEMP_FILES=$(mktemp)
-TEMP_CONTENT=$(mktemp)
+TEMP_CONTENT=$(mktemp --suffix=.py)
 BANDIT_TEMP="temp_sec.csv"
 
 # Ensure temporary files are removed on exit
