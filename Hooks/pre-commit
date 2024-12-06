@@ -5,47 +5,60 @@
 
 #!/bin/bash
 
+#!/bin/bash
+
+# Pre-commit hook to run Bandit on specified Python directories if any Python file is staged for commit
+
+set -e
+
 REPORT="security_vulnerability_report.csv"
 
+TEMP=$(mktemp)
+
 cleanup() {
-    rm -f temp_sec.csv "$TEMP"
+    rm -f "$TEMP" temp_sec.csv
 }
 trap cleanup EXIT
 
-git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > /dev/null
-STAGED_PY_FILES_EXIST=$?
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
 
-if [ "$STAGED_PY_FILES_EXIST" -eq 0 ]; then
-    echo "Python files are staged for commit. Running Bandit on all Python files in the repository."
+git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
+
+if [ -s "$TEMP" ]; then
+    echo "Python files are staged for commit. Running Bandit on specified directories."
 
     echo "filename,test_name,test_id,issue_severity,issue_confidence,issue_cwe,issue_text,line_number,line_range,,,more_info" > "$REPORT"
 
-    find . -type f -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" > all_python_files.txt
+    DIRECTORIES=(
+        "."                    
+        "MLForensics/mining"
+        "MLForensics/empirical"
+        "MLForensics/FAME-ML"
+    )
 
-    # Check if there are any Python files to scan
-    if [ -s all_python_files.txt ]; then
-        while IFS= read -r file
-        do
-            if [ -f "$file" ]; then
-                # Run Bandit on each file and append results to the report
-                bandit -f csv -o temp_sec.csv "$file"
-                tail -n +2 temp_sec.csv >> "$REPORT"
-            fi
-        done < all_python_files.txt
-    fi
+    for dir in "${DIRECTORIES[@]}"; do
+        if [ -d "$dir" ]; then
+            echo "Scanning directory: $dir"
+            
+            bandit -q -f csv -o temp_sec.csv "$dir"
+
+            tail -n +2 temp_sec.csv >> "$REPORT"
+        else
+            echo "Directory not found: $dir. Skipping."
+        fi
+    done
 
     rm -f temp_sec.csv
-
-    rm -f all_python_files.txt
 
     if [ "$(wc -l < "$REPORT")" -gt 1 ]; then
         echo "Security issues detected by Bandit. See $REPORT for details."
     else
         echo "No security issues found by Bandit."
-        rm -f "$REPORT"
+        rm -f "$REPORT" 
     fi
 else
-    echo "ℹ️  No Python files staged for commit. Skipping Bandit scan."
+    echo "No Python files staged for commit. Skipping Bandit scan."
 fi
 
 exit 0
