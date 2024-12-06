@@ -1,3 +1,5 @@
+# Modify for bandit report (to be used for part 5c)
+
 '''
 Farzana Ahamed Bhuiyan (Lead) 
 Akond Rahman 
