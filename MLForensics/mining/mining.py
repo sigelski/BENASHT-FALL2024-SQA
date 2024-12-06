@@ -1,5 +1,5 @@
-# mining.py
-# gdsgsdgsgdsgdsgsdgdsgdsgs
+### COMP-5710 Final Project ###
+### 5c - Integrate forensics by modifying 5 Python methods of your choice. (20%)
 
 import os
 import pandas as pd 
