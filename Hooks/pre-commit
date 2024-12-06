@@ -8,7 +8,10 @@ REPORT="security_vulnerability_report.csv"
 TEMP=$(mktemp)
 
 # Gets the list of all staged Python files if there are any (should be).
-git diff --cached --name-only --diff-filter=ACM | grep '\.py$' > "$TEMP"
+git diff --cached --name-only --diff-filter=ACMR | grep -i '\.py$' > "$TEMP"
+
+echo "Files to scan:" 
+cat "$TEMP"
 
 # Check if there are any Python files to scan
 if [ -s "$TEMP" ]; then
